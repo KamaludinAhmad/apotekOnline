@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const mysql = require('mysql')
 const jwt = require('jsonwebtoken')
-const session = require('express-session');
+// const session = require('express-session');
 const app = express()
 
 const secretKey = 'thisisverysecretkey'
@@ -23,11 +23,11 @@ const connection = mysql.createConnection({
 	database : 'Apotek'
 });
 
-app.use(session({
-	secret: 'secret',
-	resave: true,
-	saveUninitialized: true
-}));
+// app.use(session({
+// 	secret: 'secret',
+// 	resave: true,
+// 	saveUninitialized: true
+// }));
 
 connection.connect((err) => {
     if (err) throw err
@@ -53,29 +53,29 @@ const isAuthorized = (request, result, next) => {
     next()
 }
 
-app.get('/', (request, result) => {
+app.get('/home', (request, result) => {
     result.json({
         success: true,
-        message: 'Dirumah aja ya'
+        message: 'Login sukses, Dirumah aja ya'
     })
 })
 
-app.post('/login/admin', (request, result) => {
+app.post('/admin', (request, result) => {
     let data = request.body
 
-    if (data.username == 'admin' && data.password == 'admin') {
+    if (data.username == 'kamal' && data.password == 'kamal') {
         let token = jwt.sign(data.username + '|' + data.password, secretKey)
 
         result.json({
             success: true,
-            message: 'Login sukses!',
+            message: 'Login success, welcome back Kamal!',
             token: token
         })
     }
 
     result.json({
         success: false,
-        message: 'Username / Password Salah!'
+        message: 'You are not person with username admin and have password admin!'
     })
 })
 
@@ -88,7 +88,7 @@ app.post('/login/user', function(request, response) {
 			if (results.length > 0) {
 				request.session.loggedin = true;
 				request.session.username = username;
-				response.redirect('/barang');
+				response.redirect('/home');
 			} else {
 				response.send('Username dan/atau Password salah!');
 			}			
@@ -116,6 +116,26 @@ app.get('/barang',  (req, res) => {
     })
 })
 
+app.get('/barang/:id_barang', (req, res) =>{
+    connection.query(`
+    select * from barang where id_barang = ?`
+    ,[req.params.id_barang], (error, results) => {
+        if (error) throw error
+
+        if (results.length <=0) {
+            res.json({
+                success: false,
+                message: 'tidan ada barang yang cocok dengan id barang ' + req.params.id_barang
+            })
+        }else{
+            res.json({
+                success: true,
+                message: 'barang sesuai dengan id: ' + req.params.id_barang,
+                data: results[0]
+            })
+        }
+    })
+})
 // create data barang
 app.post('/barang', isAuthorized, (request, result) => {
     let data = request.body
@@ -166,5 +186,58 @@ app.delete('/barang/:id_barang', isAuthorized, (request, result) => {
     result.json({
         success: true,
         message: 'Data has been deleted'
+    })
+})
+
+// user membeli barang
+app.post('/barang/:id_barang/beli', (req, res) =>{
+    let request = req.body
+    connection.query(`select * from barang where id_barang = ?`
+    ,[req.params.id_barang], (error, results) => {
+        if (error) throw error
+
+        if (results.length <= 0) {
+            res.json({
+                success: false,
+                message: 'tidak ada barang dengan id: ' + req.params.id_barang
+            })
+        } else{
+            let data = results[0]
+
+            res.json({
+                success: true,
+                message: 'Anda akan membeli ' + data.nama_barang + 'dengan jumlah : ' + request.jumlah + ' dan akan dikirim ke : ' +
+                request.alamat_pengiriman + '. Total harga pembelian anda Rp. ' + (request.jumlah * data.harga) + '. Pilih metode pembayaran.',
+                data: {
+                    kode_transaksi: 'ORD' ,
+                    data_pengiriman: request,
+                    metode_pembayaran: [{
+                        kode: '001',
+                        nama: 'BRI Virtual Account'
+                    },
+                    {
+                        kode: '002',
+                        nama: 'BNI Virtual Account'
+                    },
+                    {
+                        kode: '003',
+                        nama: 'BCA Virtual Account'
+                    },
+                    {
+                        kode: '004',
+                        nama: 'Mandiri Virtual Account'
+                    }
+                ]
+                } 
+            })
+        }
+    })
+})
+
+// checkout barang
+app.post('/bayar', (req, res) => {
+    res.json({
+        success: true,
+        message: 'pesanan anda telah berhasil, bayar untuk melanjutkan transaksi anda'
     })
 })
