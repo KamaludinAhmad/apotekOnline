@@ -88,7 +88,7 @@ app.post('/login/user', function(request, response) {
 			if (results.length > 0) {
 				request.session.loggedin = true;
 				request.session.username = username;
-				response.redirect('/shoe');
+				response.redirect('/barang');
 			} else {
 				response.send('Username dan/atau Password salah!');
 			}			
@@ -99,7 +99,7 @@ app.post('/login/user', function(request, response) {
 		response.end();
 	}
 });
-// create data
+// get data barang
 app.get('/barang',  (req, res) => {
     let sql = `
         select * from barang
@@ -116,7 +116,7 @@ app.get('/barang',  (req, res) => {
     })
 })
 
-// create data
+// create data barang
 app.post('/barang', isAuthorized, (request, result) => {
     let data = request.body
 
@@ -132,5 +132,39 @@ app.post('/barang', isAuthorized, (request, result) => {
     result.json({
         success: true,
         message: 'Data barang telah ditambahkan'
+    })
+})
+// update data barang
+app.put('/barang/:id_barang', isAuthorized, (request, result) => {
+    let data = request.body
+
+    let sql = `
+        update barang
+        set jenis_barang = '`+data.jenis_barang+`', nama_barang = '`+data.nama_barang+`', harga = '`+data.harga+`'
+        where id_barang = `+request.params.id_barang+`
+    `
+
+    connection.query(sql, (err, result) => {
+        if (err) throw err
+    })
+
+    result.json({
+        success: true,
+        message: 'Data has been updated'
+    })
+})
+// delete data barang
+app.delete('/barang/:id_barang', isAuthorized, (request, result) => {
+    let sql = `
+        delete from barang where id_barang = `+request.params.id_barang+`
+    `
+
+    connection.query(sql, (err, res) => {
+        if (err) throw err
+    })
+
+    result.json({
+        success: true,
+        message: 'Data has been deleted'
     })
 })
