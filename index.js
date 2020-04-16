@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const mysql = require('mysql')
 const jwt = require('jsonwebtoken')
-// const session = require('express-session');
+const session = require('express-session');
 const app = express()
 
 const secretKey = 'thisisverysecretkey'
@@ -15,6 +15,11 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({
     extended: true
 }))
+app.use(session({
+	secret: 'secret',
+	resave: true,
+	saveUninitialized: true
+}));
 
 const connection = mysql.createConnection({
 	host     : 'localhost',
@@ -22,12 +27,6 @@ const connection = mysql.createConnection({
 	password : '',
 	database : 'Apotek'
 });
-
-// app.use(session({
-// 	secret: 'secret',
-// 	resave: true,
-// 	saveUninitialized: true
-// }));
 
 connection.connect((err) => {
     if (err) throw err
@@ -63,12 +62,12 @@ app.get('/home', (request, result) => {
 app.post('/admin', (request, result) => {
     let data = request.body
 
-    if (data.username == 'kamal' && data.password == 'kamal') {
+    if (data.username == 'kamalz' && data.password == 'kamalz') {
         let token = jwt.sign(data.username + '|' + data.password, secretKey)
 
         result.json({
             success: true,
-            message: 'Login success, welcome back Kamal!',
+            message: 'Login success, welcome back Kamalz!',
             token: token
         })
     }
@@ -79,11 +78,10 @@ app.post('/admin', (request, result) => {
     })
 })
 
-app.post('/login/user', function(request, response) {
+app.post('/user', function(request, response) {
 	var username = request.body.username;
 	var password = request.body.password;
 	if (username && password) {
-
 		connection.query('SELECT * FROM user WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {
 			if (results.length > 0) {
 				request.session.loggedin = true;
@@ -203,7 +201,6 @@ app.post('/barang/:id_barang/beli', (req, res) =>{
             })
         } else{
             let data = results[0]
-
             res.json({
                 success: true,
                 message: 'Anda akan membeli ' + data.nama_barang + 'dengan jumlah : ' + request.jumlah + ' dan akan dikirim ke : ' +
